@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', function() {
             mainContent.style.display = 'block';
             mainContent.classList.add('show');
         }
-    }, 2500);
+    }, 1000);
 });
 
 // ========== AUTO-SUBMIT FILTER ==========
@@ -70,8 +70,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (msg.parentElement) {
                         msg.remove();
                     }
-                }, 500);
-            }, 3000);
+                }, 7000);
+            }, 7000);
         })(messages[i]);
     }
     

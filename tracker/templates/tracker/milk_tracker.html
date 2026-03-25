@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Milk Tracker Pro | Smart Dairy Management</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    
+    <!-- Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+
+    <!-- External CSS -->
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'css/splash.css' %}">
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h2>
+            <i class="fas fa-tint"></i>
+            Milk Tracker Pro
+            <span class="header-badge"><i class="fas fa-star"></i> Premium</span>
+        </h2>
+    </div>
+    
+    <div class="content">
+        <!-- Messages -->
+        {% if messages %}
+        <div class="messages-container">
+            {% for message in messages %}
+            <div class="alert-premium" style="border-left-color: {% if message.tags == 'success' %}#27ae60{% elif message.tags == 'error' %}#e74c3c{% else %}#f39c12{% endif %}">
+                <i class="fas {% if message.tags == 'success' %}fa-check-circle{% elif message.tags == 'error' %}fa-exclamation-circle{% else %}fa-info-circle{% endif %}"></i>
+                {{ message }}
+                <span class="close-btn"><i class="fas fa-times"></i></span>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        
+        <!-- FILTER SECTION -->
+        <div class="filter-card">
+            <form method="GET">
+                <div style="display: flex; gap: 15px; flex-wrap: wrap; width: 100%;">
+                    <div class="filter-group">
+                        <label><i class="fas fa-calendar"></i> MONTH</label>
+                        <select name="month">
+                            <option value="">All Months</option>
+                            {% for val, name in MONTH_CHOICES %}
+                                <option value="{{ val }}" {% if selected_month|stringformat:"s" == val|stringformat:"s" %}selected{% endif %}>
+                                    {{ name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label><i class="fas fa-calendar-alt"></i> YEAR</label>
+                        <select name="year">
+                            <option value="">All Years</option>
+                            {% for val, name in YEAR_CHOICES %}
+                                <option value="{{ val }}" {% if selected_year|stringformat:"s" == val|stringformat:"s" %}selected{% endif %}>
+                                    {{ name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn-filter">
+                        <i class="fas fa-search"></i> Apply Filter
+                    </button>
+                    
+                    <a href="?month={{ current_month }}&year={{ current_year }}" class="btn-clear">
+                        <i class="fas fa-refresh"></i> Show Current
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <!-- ADD NEW ENTRY -->
+        <div class="add-entry-card">
+            <h3>
+                {% if edit_mode %}
+                    <i class="fas fa-edit"></i> Edit Entry
+                {% else %}
+                    <i class="fas fa-plus-circle"></i> Add New Entry
+                {% endif %}
+            </h3>
+            <form method="POST">
+                {% csrf_token %}
+                <div class="form-grid">
+                    <div class="input-field">
+                        <label><i class="fas fa-calendar-day"></i> DATE</label>
+                        {{ form.date }}
+                    </div>
+                    <div class="input-field">
+                        <label><i class="fas fa-tachometer-alt"></i> QUANTITY (LITERS)</label>
+                        {{ form.quantity }}
+                    </div>
+                    <div class="input-field">
+                        <label><i class="fas fa-rupee-sign"></i> PRICE (PER LITRE)</label>
+                        <input type="text" value="₹ 60" class="price-readonly" readonly>
+                    </div>
+                    <button type="submit" class="btn-submit">
+                        {% if edit_mode %}
+                            <i class="fas fa-save"></i> Update Entry
+                        {% else %}
+                            <i class="fas fa-save"></i> Add Entry
+                        {% endif %}
+                    </button>
+                    {% if edit_mode %}
+                        <a href="?month={{ current_month }}&year={{ current_year }}" class="btn-cancel">
+                            <i class="fas fa-times"></i> Cancel
+                        </a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+
+        <!-- MONTHLY RECORDS -->
+        <div class="records-section">
+            <h3>
+                <i class="fas fa-chart-line"></i>
+                Monthly Records
+                {% if selected_month and selected_year %}
+                    <span class="filter-badge">{{ month_name }} {{ selected_year }}</span>
+                {% endif %}
+            </h3>
+            
+            <!-- DESKTOP TABLE -->
+            <table class="premium-table">
+                <thead>
+                    <tr>
+                        <th><i class="fas fa-calendar"></i> Date</th>
+                        <th><i class="fas fa-tint"></i> Qty (L)</th>
+                        <th><i class="fas fa-tag"></i> Price (₹/L)</th>
+                        <th><i class="fas fa-coins"></i> Total (₹)</th>
+                        <th><i class="fas fa-cog"></i> Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for e in entries %}
+                    <tr>
+                        <td><strong>{{ e.date|date:"F d, Y" }}</strong></td>
+                        <td>{{ e.quantity }} L</td>
+                        <td>₹ {{ e.price_per_litre }}</td>
+                        <td style="color: #27ae60; font-weight: 700;">₹ {{ e.total }}</td>
+                        <td>
+                            <a href="?{% if selected_month %}month={{ selected_month }}&{% endif %}{% if selected_year %}year={{ selected_year }}&{% endif %}edit_id={{ e.id }}" class="btn-edit-premium">
+                                <i class="fas fa-edit"></i> Edit
+                            </a>
+                            <a href="?{% if selected_month %}month={{ selected_month }}&{% endif %}{% if selected_year %}year={{ selected_year }}&{% endif %}delete_id={{ e.id }}" class="btn-delete-premium" onclick="return confirm('Delete this entry?');">
+                                <i class="fas fa-trash-alt"></i> Delete
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" style="text-align: center; padding: 40px;">✨ No records found. Start adding entries! ✨</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            
+            <!-- MOBILE CARDS -->
+            <div class="mobile-cards-premium">
+                {% for e in entries %}
+                <div class="record-card-premium">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+                        <span style="font-weight: 700; color: #3498db;">
+                            <i class="fas fa-calendar"></i> {{ e.date|date:"F d, Y" }}
+                        </span>
+                        <span style="color: #27ae60; font-weight: 700;">₹ {{ e.total }}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                        <span style="color: rgba(255,255,255,0.6);">Quantity:</span>
+                        <span>{{ e.quantity }} Liters</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                        <span style="color: rgba(255,255,255,0.6);">Price/L:</span>
+                        <span>₹ {{ e.price_per_litre }}</span>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <a href="?{% if selected_month %}month={{ selected_month }}&{% endif %}{% if selected_year %}year={{ selected_year }}&{% endif %}edit_id={{ e.id }}" class="btn-edit-premium" style="flex: 1; text-align: center; justify-content: center;">
+                            <i class="fas fa-edit"></i> Edit
+                        </a>
+                        <a href="?{% if selected_month %}month={{ selected_month }}&{% endif %}{% if selected_year %}year={{ selected_year }}&{% endif %}delete_id={{ e.id }}" class="btn-delete-premium" style="flex: 1; text-align: center; justify-content: center;" onclick="return confirm('Delete this entry?');">
+                            <i class="fas fa-trash-alt"></i> Delete
+                        </a>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="record-card-premium" style="text-align: center;">
+                    ✨ No records found ✨
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- FIXED SUMMARY -->
+<div class="premium-summary">
+    <div class="premium-summary-content">
+        <div class="summary-item-premium">
+            <div class="summary-icon-premium"><i class="fas fa-jug"></i></div>
+            <div class="summary-info-premium">
+                <div class="summary-label-premium">Total Milk</div>
+                <div class="summary-value-premium">{{ total_qty|floatformat:1 }} L</div>
+            </div>
+        </div>
+        <div class="summary-item-premium">
+            <div class="summary-icon-premium"><i class="fas fa-wallet"></i></div>
+            <div class="summary-info-premium">
+                <div class="summary-label-premium">Total Revenue</div>
+                <div class="summary-value-premium">₹ {{ total_bill|floatformat:2 }}</div>
+            </div>
+        </div>
+        {% if selected_month and selected_year %}
+        <div class="summary-item-premium">
+            <div class="summary-icon-premium"><i class="fas fa-filter"></i></div>
+            <div class="summary-info-premium">
+                <div class="summary-label-premium">Active Filter</div>
+                <div class="summary-value-premium" style="font-size: 14px;">{{ month_name }} {{ selected_year }}</div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- External JavaScript -->
+{% load static %}
+<script src="{% static 'js/script.js' %}"></script>
+<script src="{% static 'js/splash.js' %}"></script>
+
+</body>
+</html>
